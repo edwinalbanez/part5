@@ -1,6 +1,4 @@
 import { useState } from "react";
-import blogsService from "../services/blogs";
-
 
 const BlogForm = ({ onSubmit }) => {
   const emptyBlog = {
@@ -22,8 +20,7 @@ const BlogForm = ({ onSubmit }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const newBlog = await blogsService.create(data);
-    onSubmit(newBlog);
+    onSubmit(data);
     setData(emptyBlog);
   }
 
@@ -39,17 +36,19 @@ const BlogForm = ({ onSubmit }) => {
                 type="text"
                 value={data.title}
                 onChange={handleChange}
+                required
               />
             </label>
           </div>
           <div>
             <label>
-              Author{" "}
+              Author: {" "}
               <input
                 id="author"
                 type="text"
                 value={data.author}
                 onChange={handleChange}
+                required
               />
             </label>
           </div>
@@ -61,6 +60,7 @@ const BlogForm = ({ onSubmit }) => {
                 type="text"
                 value={data.url}
                 onChange={handleChange}
+                required
               />
             </label>
           </div>

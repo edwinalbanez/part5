@@ -1,29 +1,50 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Blog from './components/Blog'
 import blogService from './services/blogs'
 import loginService from './services/login'
 import BlogForm from './components/BlogForm'
+import Notification from './components/Notification'
+import Togglable from './components/Togglable'
+import formattedList from './utils/formattedList'
 
 const App = () => {
   const [blogs, setBlogs] = useState([]);
   const [user, setUser] = useState(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [notification, setNotification] = useState({});
+  const blogFormRef = useRef(null);
 
   useEffect(() => {
     blogService.getAll().then(blogs =>
       setBlogs( blogs )
-    )  
+    );
   }, []);
 
   useEffect(() => {
     const userIsLogged = window.localStorage.getItem('loggedUser');
     if (userIsLogged) {
       const loggedUser = JSON.parse(userIsLogged);
-      blogService.setToken(loggedUser.token)
+      blogService.setToken(loggedUser.token);
       setUser(loggedUser);
     }
   }, []);
+
+  const clearLogin = () => {
+    setUsername('');
+    setPassword('');
+  }
+
+  const showMessage = (message, type = 'success') => {
+    setNotification({
+      message,
+      type,
+    });
+
+    setTimeout(() => {
+      setNotification({})
+    }, 3000);
+  }
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -34,9 +55,13 @@ const App = () => {
       );
       blogService.setToken(loggedUser.token);
       setUser(loggedUser);
+      clearLogin();
+      showMessage(`Welcome ${loggedUser.name}`);
       
     } catch (error) {
-      console.log(error.response.data.error);
+      const message = error.response.data.error;
+      console.log("hello", message);
+      showMessage(message, 'error')
     }
   }
 
@@ -45,16 +70,37 @@ const App = () => {
     setUser(null);
   }
 
-  const onSubmit = (newBlog) => {
-    setBlogs(blogs => blogs.concat(newBlog));
+  const onSubmitBlog = async (dataBlog) => {
+    try {
+      const emptyFields = Object.keys(dataBlog).filter(
+        (key) => dataBlog[key] === null || dataBlog[key].trim() === ""
+      );
+
+      if (emptyFields.length !== 0) {
+        showMessage(`
+          The ${formattedList(emptyFields)} have invalid values`,
+          'error'
+        );
+        return;
+      }
+
+      const newBlog = await blogService.create(dataBlog);
+      setBlogs(blogs => blogs.concat(newBlog));
+      showMessage("Blog added successfully");
+      blogFormRef.current.toggleVisibility();
+    } catch (error) {
+      showMessage("Blog not added", 'error');
+      console.log(error.response.data.error);
+    }
   }
 
   if (user === null) {
     return (
       <div>
         <h2>Log in to application</h2>
+        <Notification notification={notification} />
         <form onSubmit={handleLogin}>
-          <div style={{display: 'grid', gap: 5}}>
+          <div style={{ display: "grid", gap: 5 }}>
             <div>
               <label>
                 Username:{" "}
@@ -70,7 +116,7 @@ const App = () => {
               <label>
                 Password:{" "}
                 <input
-                  type="text"
+                  type="password"
                   value={password}
                   required
                   onChange={({ target }) => setPassword(target.value)}
@@ -86,39 +132,27 @@ const App = () => {
     );
   }
 
-  if (blogs.length === 0) {
-    return (
-      <div>
-        <h2>Blogs</h2>
-        <div>
-          {user.name} logged in <button onClick={handleLogOut}>Log out</button>
-        </div>
-        <br />
-        <div>
-          <BlogForm onSubmit={onSubmit} />
-        </div><br />
-        <div style={{ fontStyle: "italic" }}>No blogs</div>
-      </div>
-    );
-  }
-
   return (
     <div>
       <h2>Blogs</h2>
+      <Notification notification={notification} />
       <div>
-        {user.name} logged in{' '}
-        <button onClick={handleLogOut}>Log out</button>
-      </div><br />
-      <div>
-        <BlogForm onSubmit={onSubmit} />
+        {user.name} logged in <button onClick={handleLogOut}>Log out</button>
       </div>
-      <div><br />
-        {blogs.map(blog =>
-          <Blog key={blog.id} blog={blog} />
-        )}
+      <br />
+      <div>
+        <Togglable buttonLabel="Create new blog" ref={blogFormRef} >
+          <BlogForm onSubmit={onSubmitBlog} />
+        </Togglable>
+      </div>
+      <div>
+        <br />
+        {blogs.length !== 0
+          ? blogs.map(blog => <Blog key={blog.id} blog={blog} />) 
+          : "No blogs"}
       </div>
     </div>
-  )
+  );
 }
 
 export default App
