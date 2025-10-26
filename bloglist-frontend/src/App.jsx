@@ -60,7 +60,6 @@ const App = () => {
       
     } catch (error) {
       const message = error.response.data.error;
-      console.log("hello", message);
       showMessage(message, 'error')
     }
   }
