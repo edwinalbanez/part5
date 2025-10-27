@@ -16,9 +16,10 @@ const App = () => {
   const blogFormRef = useRef(null);
 
   useEffect(() => {
-    blogService.getAll().then(blogs =>
-      setBlogs( blogs )
-    );
+    blogService.getAll().then(blogs => {
+      const sortedBlogs = sortByLikes(blogs);
+      setBlogs(sortedBlogs);
+    });
   }, []);
 
   useEffect(() => {
@@ -30,6 +31,8 @@ const App = () => {
     }
   }, []);
 
+  const sortByLikes = blogs => [...blogs.sort((b1, b2) => b2.likes - b1.likes)];
+  
   const clearLogin = () => {
     setUsername('');
     setPassword('');
@@ -84,9 +87,11 @@ const App = () => {
       }
 
       const newBlog = await blogService.create(dataBlog);
-      setBlogs(blogs => blogs.concat(newBlog));
+      const sortedBlogs = sortByLikes(blogs.concat(newBlog));
+      setBlogs(sortedBlogs);
       showMessage("Blog added successfully");
       blogFormRef.current.toggleVisibility();
+
     } catch (error) {
       showMessage("Blog not added", 'error');
       console.log(error.response.data.error);
@@ -94,9 +99,10 @@ const App = () => {
   }
 
   const handleLike = (likedBlog) => {
-    setBlogs(
+    const sortedBlogs = sortByLikes(
       blogs.map(blog => blog.id === likedBlog.id ? likedBlog : blog)
     );
+    setBlogs(sortedBlogs);
   }
 
   if (user === null) {
