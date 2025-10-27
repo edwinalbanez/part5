@@ -40,15 +40,30 @@ const tokenExtractor = (request, response, next) => {
 }
 
 const userExtractor = async (request, response, next) => {
-  if (!request.token) {
+  try {
+    if (!request.token) {
+      request.user = null;
+      return next();
+    }
+
+    const decodedToken = jwt.verify(request.token, process.env.JWT_SECRET);
+    const user = await User.findById(decodedToken.id);
+    request.user = user;
+    next();
+
+  } catch (error) {
+    request.user = null;
+    console.log(error);
+    next();
+  }
+}
+
+const requireAuth = (request, response, next) => {
+  if (!request.user) {
     return response.status(401).json({
-      error: 'Token is missing'
+      error: 'Authentication required'
     });
   }
-
-  const decodedToken = jwt.verify(request.token, process.env.JWT_SECRET);
-  const user = await User.findById(decodedToken.id);
-  request.user = user;
   next();
 }
 
@@ -56,5 +71,6 @@ module.exports = {
   unknowEndpoint,
   errorHandler,
   tokenExtractor,
-  userExtractor
+  userExtractor,
+  requireAuth
 }

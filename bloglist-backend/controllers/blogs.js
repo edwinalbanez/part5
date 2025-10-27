@@ -12,8 +12,8 @@ blogsRouter.get('/', async (request, response) => {
 blogsRouter.post('/', middleware.userExtractor, async (request, response) => {
   const { user } = request;
   if (!user) {
-    return response.status(403).json({
-      error: 'User not found'
+    return response.status(401).json({
+      error: 'Authentication required'
     });
   }
 
@@ -59,10 +59,10 @@ blogsRouter.delete('/:id', middleware.userExtractor, async (request, response) =
   }
 });
 
-blogsRouter.put('/:id/likes', middleware.userExtractor, async (request, response) => {
+blogsRouter.put('/:id', middleware.userExtractor, async (request, response) => {
   if (!request.user) {
-    return response.status(404).json({
-      error: 'User not found'
+    return response.status(401).json({
+      error: 'Authentication required'
     });
   }
 

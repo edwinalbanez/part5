@@ -1,6 +1,7 @@
 import { useState } from "react"
+import blogsService from "../services/blogs";
 
-const Blog = ({ blog }) => {
+const Blog = ({ blog, onLike }) => {
   const [showInfo, setShowInfo] = useState(false);
   const toggleInfo = () => {
     setShowInfo(show => !show)
@@ -13,10 +14,19 @@ const Blog = ({ blog }) => {
     borderRadius: 5
   };
 
+  const handleLike = async (blogId) => {
+    const blog = await blogsService.like(blogId);
+    onLike(blog);
+  };
+
   return (
     <div style={blogStyle}>
       {showInfo ? (
-        <Info blog={blog} toggle={toggleInfo} />
+        <Info
+          blog={blog}
+          toggle={toggleInfo}
+          onLike={handleLike}
+        />
       ) : (
         <p>
           {blog.title} <button onClick={toggleInfo}>View</button>
@@ -26,11 +36,14 @@ const Blog = ({ blog }) => {
   );
 }
 
-const Info = ({ blog, toggle }) => 
+const Info = ({ blog, toggle, onLike }) => 
   <>
     <p> {blog.title} <button onClick={toggle}>Hide</button> </p>
     <p> {blog.url} </p>
-    <p> Likes: {blog.likes} </p>
+    <p>
+      Likes: {blog.likes}{' '}
+      <button onClick={() => onLike(blog.id)}>Like</button>
+    </p>
     <p> {blog.author} </p>
   </>
 
