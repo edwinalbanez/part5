@@ -79,4 +79,34 @@ blogsRouter.put('/:id', middleware.userExtractor, async (request, response) => {
   response.json(updatedBlog);
 });
 
+blogsRouter.delete('/:id', middleware.userExtractor, async (request, response) => {
+  const user = request.user;
+  if (!user) {
+    return response.status(401).json({
+      error: 'Authentication required'
+    });
+  }
+
+  const id = request.params.id;
+  const blogToDelete = await Blog.findById(id);
+  if (!blogToDelete) {
+    return response.status(404).json({
+      error: 'Blog not found'
+    });
+  }
+
+  const userCanDelete = user._id.toString() === blogToDelete.user.toString();
+  if (userCanDelete) {
+    user.blogs = user.blogs.filter(blog => blog._id.toString() !== blogToDelete._id.toString());
+    await user.save();
+    await blogToDelete.deleteOne();
+    response.json(blogToDelete);
+
+  } else {
+    response.status(403).json({
+      error: "You can't delete this blog"
+    });
+  }
+});
+
 module.exports = blogsRouter;

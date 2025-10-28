@@ -89,6 +89,7 @@ const App = () => {
       const newBlog = await blogService.create(dataBlog);
       const sortedBlogs = sortByLikes(blogs.concat(newBlog));
       setBlogs(sortedBlogs);
+
       showMessage("Blog added successfully");
       blogFormRef.current.toggleVisibility();
 
@@ -98,11 +99,33 @@ const App = () => {
     }
   }
 
-  const handleLike = (likedBlog) => {
-    const sortedBlogs = sortByLikes(
-      blogs.map(blog => blog.id === likedBlog.id ? likedBlog : blog)
-    );
-    setBlogs(sortedBlogs);
+  const handleLike = async (blogId) => {
+    try {
+      const likedBlog = await blogService.like(blogId);
+      const sortedBlogs = sortByLikes(
+        blogs.map((blog) => (blog.id === likedBlog.id ? likedBlog : blog))
+      );
+      setBlogs(sortedBlogs);
+    } catch (error) {
+      console.log(error);
+      showMessage("Error when liking the blog", "error");
+    }
+  }
+
+  const handleDelete = async (blogToDelete) => {
+    try {
+      const confirmDelete = window.confirm(`Remove blog "${blogToDelete.title}"?`);
+      if (!confirmDelete) return
+
+      const response = await blogService.remove(blogToDelete.id);
+      if (response.status === 204) {
+        showMessage("Blog removed");
+        setBlogs(blogs => blogs.filter(blog => blog.id !== blogToDelete.id))
+      }
+    } catch (error) {
+      console.log(error);
+      showMessage("An error occurred. The blog was not deleted", "error");
+    }
   }
 
   if (user === null) {
@@ -152,14 +175,16 @@ const App = () => {
       </div>
       <br />
       <div>
-        <Togglable buttonLabel="Create new blog" ref={blogFormRef} >
+        <Togglable buttonLabel="Create new blog" ref={blogFormRef}>
           <BlogForm onSubmit={handleSubmitBlog} />
         </Togglable>
       </div>
       <div>
         <br />
         {blogs.length !== 0
-          ? blogs.map(blog => <Blog key={blog.id} blog={blog} onLike={handleLike} />) 
+          ? blogs.map(blog => 
+              <Blog key={blog.id} blog={blog} onLike={handleLike} onDelete={handleDelete} />
+            )
           : "No blogs"}
       </div>
     </div>
