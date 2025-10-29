@@ -21,7 +21,7 @@ const App = () => {
       setBlogs(sortedBlogs);
     });
   }, []);
-
+  
   useEffect(() => {
     const userIsLogged = window.localStorage.getItem('loggedUser');
     if (userIsLogged) {
